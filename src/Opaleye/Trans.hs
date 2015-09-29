@@ -65,10 +65,10 @@ runOpaleyeT :: PSQL.Connection -> OpaleyeT m a -> m a
 runOpaleyeT c = flip runReaderT c . unOpaleyeT
 
 
-withConn :: MonadBaseControl IO m => (Connection -> m a) -> OpaleyeT m a
+withConn :: Monad m => (Connection -> m a) -> OpaleyeT m a
 withConn f = do
     conn <- ask
-    lift $ control $ \io -> io (f conn)
+    lift (f conn)
 
 
 withConnIO :: MonadBase IO m => (Connection -> IO a) -> OpaleyeT m a
