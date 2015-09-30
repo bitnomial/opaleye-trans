@@ -1,5 +1,5 @@
 name:                opaleye-trans
-version:             0.1.0
+version:             0.1.1
 synopsis:            A monad transformer for Opaleye
 description:         A monad transformer for Opaleye
 homepage:            https://github.com/tomjaguarpaw/haskell-opaleye
