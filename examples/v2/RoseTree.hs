@@ -175,10 +175,10 @@ nodeAndBranch = leftJoin allNodes allNodeBranches (uncurry idsEqual)
     idsEqual (NodeP nid' _ _) (NodeBranchP nbid _) = nid' .== nbid
 
 
-byId :: Query a -> (a -> Column PGInt4) -> Int -> QueryArr (Column PGInt4) a
+byId :: Query a -> (a -> Column PGInt4) -> Int -> Query a
 byId q getId id' = proc () -> do
     row <- q -< ()
-    restrict -< getId row .== pgInt id'
+    restrict -< getId row .== pgInt4 id'
     returnA -< row
 
 
