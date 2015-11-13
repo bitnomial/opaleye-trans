@@ -24,6 +24,7 @@ library
   build-depends:
     base                >=4.8 && <4.9,
     mtl                 >=2.2 && <2.3,
+    transformers        >=0.3 && <0.5,
     transformers-base   >=0.4 && <0.5,
     opaleye             >=0.4 && <0.5,
     postgresql-simple   >=0.4 && <0.5,

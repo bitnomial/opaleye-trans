@@ -31,11 +31,14 @@ module Opaleye.Trans
     , -- * Reexports
       liftBase
     , MonadBase
+    , liftIO
+    , MonadIO
     , ask
     , Int64
     ) where
 
 import           Control.Monad.Base              (MonadBase, liftBase)
+import           Control.Monad.IO.Class          (MonadIO, liftIO)
 import           Control.Monad.Reader            (MonadReader, ReaderT (..),
                                                   ask)
 import           Control.Monad.Trans             (MonadTrans (..))
@@ -53,7 +56,7 @@ import           Opaleye
 
 -- | The 'Opaleye' monad transformer
 newtype OpaleyeT m a = OpaleyeT { unOpaleyeT :: ReaderT Connection m a }
-    deriving (Functor, Applicative, Monad, MonadTrans, MonadReader Connection)
+    deriving (Functor, Applicative, Monad, MonadTrans, MonadIO, MonadReader Connection)
 
 
 instance MonadBase b m => MonadBase b (OpaleyeT m) where
@@ -66,10 +69,10 @@ runOpaleyeT c = flip runReaderT c . unOpaleyeT
 -- TODO Handle exceptions
 
 
-withConn :: MonadBase IO m => (Connection -> IO a) -> OpaleyeT m a
+withConn :: MonadIO m => (Connection -> IO a) -> OpaleyeT m a
 withConn f = do
     conn <- ask
-    liftBase (f conn)
+    liftIO (f conn)
 
 
 newtype Transaction a = Transaction { unTransaction :: ReaderT Connection IO a }
@@ -77,13 +80,13 @@ newtype Transaction a = Transaction { unTransaction :: ReaderT Connection IO a }
 
 
 -- | Run a postgresql transaction in the 'OpaleyeT' monad
-transaction :: MonadBase IO m => Transaction a -> OpaleyeT m a
-transaction (Transaction t) = withConn $ \conn -> 
+transaction :: MonadIO m => Transaction a -> OpaleyeT m a
+transaction (Transaction t) = withConn $ \conn ->
     withTransaction conn (runReaderT t conn)
 
 
 -- | Execute a query without a literal transaction
-run :: MonadBase IO m => Transaction a -> OpaleyeT m a
+run :: MonadIO m => Transaction a -> OpaleyeT m a
 run (Transaction t) = withConn $ runReaderT t
 
 
@@ -139,7 +142,7 @@ insertReturningFirst t ret w = listToMaybe <$> insertReturning t ret w
 --
 -- Maybe not worth defining. This almost certainly does the wrong thing.
 insertManyReturning
-    :: (MonadBase IO m, Default QueryRunner a b)
+    :: (MonadIO m, Default QueryRunner a b)
     => Table w r
     -> (r -> a)
     -> [w]

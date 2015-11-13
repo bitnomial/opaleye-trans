@@ -95,7 +95,7 @@ insertNode bid nbid x =
         (NodeP Nothing (pgInt4 bid) (pgInt4 nbid) (pgInt4 x))
 
 
-insertTree :: MonadBase IO m => Rose Int -> OpaleyeT m Int
+insertTree :: MonadIO m => Rose Int -> OpaleyeT m Int
 insertTree (Node x xs) = transaction $ do
     Just bid <- newBranch
     Just rootId <- insertNode 0 bid x
