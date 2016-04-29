@@ -28,7 +28,7 @@ library
     transformers-base   >=0.4 && <0.5,
     opaleye             >=0.4 && <0.5,
     postgresql-simple   >=0.4 && <0.6,
-    product-profunctors >=0.6 && <0.7
+    product-profunctors >=0.6 && <0.8
 
 executable opaleye-rosetree
   hs-source-dirs:      examples/v1
@@ -38,7 +38,7 @@ executable opaleye-rosetree
     base                >=4.8 && <4.9,
     opaleye             >=0.4 && <0.5,
     postgresql-simple   >=0.4 && <0.6,
-    product-profunctors >=0.6 && <0.7,
+    product-profunctors >=0.6 && <0.8,
     opaleye-trans
 
 executable opaleye-rosetree2
@@ -49,5 +49,5 @@ executable opaleye-rosetree2
     base                >=4.8 && <4.9,
     opaleye             >=0.4 && <0.5,
     postgresql-simple   >=0.4 && <0.6,
-    product-profunctors >=0.6 && <0.7,
+    product-profunctors >=0.6 && <0.8,
     opaleye-trans
