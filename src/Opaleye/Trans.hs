@@ -133,7 +133,7 @@ insertReturning t ret w = withConnIO (\c -> runInsertReturning c t w ret)
 
 
 -- | Insert a record into a 'Table' with a return value. Retrieve only the first result.
--- Similar to @listToMaybe <$> insertReturning@
+-- Similar to @'listToMaybe' '<$>' 'insertReturning'@
 insertReturningFirst
     :: Default QueryRunner a b
     => Table w r
@@ -173,7 +173,7 @@ updateReturning table r2w pred r2returned =
     withConnIO (\c -> runUpdateReturning c table r2w pred r2returned)
 
 
--- | Update items in a 'Table' with a return value.  See 'runUpdateReturning'.
+-- | Update items in a 'Table' with a return value.  Similar to @'listToMaybe' '<$>' 'updateReturning'@.
 updateReturningFirst
     :: Default QueryRunner returned haskells
     => Table w r
