@@ -158,7 +158,7 @@ insertManyReturning t ret ws =
 
 -- | Update items in a 'Table' where the predicate is true.  See 'runUpdate'.
 update :: Table w r -> (r -> w) -> (r -> Column PGBool) -> Transaction Int64
-update t r2w pred =  withConnIO (\c -> runUpdate c t r2w pred)
+update t r2w predicate =  withConnIO (\c -> runUpdate c t r2w predicate)
 
 
 -- | Update items in a 'Table' with a return value.  See 'runUpdateReturning'.
@@ -169,8 +169,8 @@ updateReturning
     -> (r -> Column PGBool)
     -> (r -> returned)
     -> Transaction [haskells]
-updateReturning table r2w pred r2returned =
-    withConnIO (\c -> runUpdateReturning c table r2w pred r2returned)
+updateReturning table r2w predicate r2returned =
+    withConnIO (\c -> runUpdateReturning c table r2w predicate r2returned)
 
 
 -- | Update items in a 'Table' with a return value.  Similar to @'listToMaybe' '<$>' 'updateReturning'@.
@@ -181,5 +181,5 @@ updateReturningFirst
     -> (r -> Column PGBool)
     -> (r -> returned)
     -> Transaction (Maybe haskells)
-updateReturningFirst table r2w pred r2returned =
-    listToMaybe <$> updateReturning table r2w pred r2returned
+updateReturningFirst table r2w predicate r2returned =
+    listToMaybe <$> updateReturning table r2w predicate r2returned
