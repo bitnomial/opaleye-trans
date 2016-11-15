@@ -147,13 +147,13 @@ insertReturningFirst t ret w = listToMaybe <$> insertReturning t ret w
 --
 -- Maybe not worth defining. This almost certainly does the wrong thing.
 insertManyReturning
-    :: (MonadIO m, Default QueryRunner a b)
+    :: (Default QueryRunner a b)
     => Table w r
-    -> (r -> a)
     -> [w]
-    -> OpaleyeT m [[b]]
-insertManyReturning t ret ws =
-    transaction (mapM (insertReturning t ret) ws)
+    -> (r -> a)
+    -> Transaction [b]
+insertManyReturning t ws ret =
+    withConnIO (\c -> runInsertManyReturning c t ws ret)
 
 
 -- | Update items in a 'Table' where the predicate is true.  See 'runUpdate'.
