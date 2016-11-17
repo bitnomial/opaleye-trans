@@ -30,6 +30,9 @@ module Opaleye.Trans
     , updateReturning
     , updateReturningFirst
 
+    , -- * Deletes
+      delete
+
     , -- * Utilities
       withConn
 
@@ -183,3 +186,9 @@ updateReturningFirst
     -> Transaction (Maybe haskells)
 updateReturningFirst table r2w predicate r2returned =
     listToMaybe <$> updateReturning table r2w predicate r2returned
+
+delete
+    :: Table a columnsR
+    -> (columnsR -> Column PGBool)
+    -> Transaction Int64
+delete table r2b = withConnIO (\c -> runDelete c table r2b)
