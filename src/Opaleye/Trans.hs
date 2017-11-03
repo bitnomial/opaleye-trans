@@ -117,7 +117,7 @@ queryFirst q = listToMaybe <$> query q
 
 -- | Insert into a 'Table'. See 'runInsert'.
 insert :: Table w r -> w -> Transaction Int64
-insert t w = withConnIO (\c -> runInsert c t w)
+insert t w = withConnIO (\c -> runInsertMany c t [w])
 
 
 -- | Insert many records into a 'Table'. See 'runInsertMany'.
@@ -132,7 +132,7 @@ insertReturning
     -> (r -> a)
     -> w
     -> Transaction [b]
-insertReturning t ret w = withConnIO (\c -> runInsertReturning c t w ret)
+insertReturning t ret w = withConnIO (\c -> runInsertManyReturning c t [w] ret)
 
 
 -- | Insert a record into a 'Table' with a return value. Retrieve only the first result.
