@@ -57,7 +57,7 @@ import           Data.Profunctor.Product.Default (Default)
 import           Database.PostgreSQL.Simple      (Connection, withTransaction)
 import qualified Database.PostgreSQL.Simple      as PSQL
 
-import           GHC.Int
+import           GHC.Int                         (Int64)
 
 import           Opaleye
 
@@ -74,13 +74,10 @@ instance MonadBase b m => MonadBase b (OpaleyeT m) where
 -- | Given a 'Connection', run an 'OpaleyeT'
 runOpaleyeT :: PSQL.Connection -> OpaleyeT m a -> m a
 runOpaleyeT c = flip runReaderT c . unOpaleyeT
--- TODO Handle exceptions
 
 
 withConn :: MonadIO m => (Connection -> IO a) -> OpaleyeT m a
-withConn f = do
-    conn <- ask
-    liftIO (f conn)
+withConn f = ask >>= liftIO . f
 
 
 newtype Transaction a = Transaction { unTransaction :: ReaderT Connection IO a }
@@ -95,14 +92,14 @@ transaction (Transaction t) = withConn $ \conn ->
 
 -- | Execute a query without a literal transaction
 run :: MonadIO m => Transaction a -> OpaleyeT m a
-run (Transaction t) = withConn $ runReaderT t
+run = withConn . runReaderT . unTransaction
 
 
 -- | With a 'Connection' in a 'Transaction'
 -- This isn't exposed so that users can't just drop down to IO
 -- in a transaction
 withConnIO :: (Connection -> IO a) -> Transaction a
-withConnIO f = Transaction (ReaderT f)
+withConnIO = Transaction . ReaderT
 
 
 -- | Execute a 'Query'. See 'runQuery'.
@@ -126,69 +123,47 @@ insertMany t ws = withConnIO (\c -> runInsertMany c t ws)
 
 
 -- | Insert a record into a 'Table' with a return value. See 'runInsertReturning'.
-insertReturning
-    :: Default QueryRunner a b
-    => Table w r
-    -> (r -> a)
-    -> w
-    -> Transaction [b]
+insertReturning :: Default QueryRunner a b => Table w r -> (r -> a) -> w -> Transaction [b]
 insertReturning t ret w = withConnIO (\c -> runInsertManyReturning c t [w] ret)
 
 
 -- | Insert a record into a 'Table' with a return value. Retrieve only the first result.
 -- Similar to @'listToMaybe' '<$>' 'insertReturning'@
-insertReturningFirst
-    :: Default QueryRunner a b
-    => Table w r
-    -> (r -> a)
-    -> w
-    -> Transaction (Maybe b)
+insertReturningFirst :: Default QueryRunner a b => Table w r -> (r -> a) -> w -> Transaction (Maybe b)
 insertReturningFirst t ret w = listToMaybe <$> insertReturning t ret w
 
 
 -- | Insert many records into a 'Table' with a return value for each record.
 --
 -- Maybe not worth defining. This almost certainly does the wrong thing.
-insertManyReturning
-    :: (Default QueryRunner a b)
-    => Table w r
-    -> [w]
-    -> (r -> a)
-    -> Transaction [b]
-insertManyReturning t ws ret =
-    withConnIO (\c -> runInsertManyReturning c t ws ret)
+insertManyReturning :: Default QueryRunner a b => Table w r -> [w] -> (r -> a) -> Transaction [b]
+insertManyReturning t ws ret = withConnIO (\c -> runInsertManyReturning c t ws ret)
 
 
 -- | Update items in a 'Table' where the predicate is true.  See 'runUpdate'.
 update :: Table w r -> (r -> w) -> (r -> Column PGBool) -> Transaction Int64
-update t r2w predicate =  withConnIO (\c -> runUpdate c t r2w predicate)
+update t r2w predicate = withConnIO (\c -> runUpdate c t r2w predicate)
 
 
 -- | Update items in a 'Table' with a return value.  See 'runUpdateReturning'.
-updateReturning
-    :: Default QueryRunner returned haskells
-    => Table w r
-    -> (r -> w)
-    -> (r -> Column PGBool)
-    -> (r -> returned)
-    -> Transaction [haskells]
-updateReturning table r2w predicate r2returned =
-    withConnIO (\c -> runUpdateReturning c table r2w predicate r2returned)
+updateReturning :: Default QueryRunner returned haskells
+                => Table w r
+                -> (r -> w)
+                -> (r -> Column PGBool)
+                -> (r -> returned)
+                -> Transaction [haskells]
+updateReturning table r2w predicate r2returned = withConnIO (\c -> runUpdateReturning c table r2w predicate r2returned)
 
 
 -- | Update items in a 'Table' with a return value.  Similar to @'listToMaybe' '<$>' 'updateReturning'@.
-updateReturningFirst
-    :: Default QueryRunner returned haskells
-    => Table w r
-    -> (r -> w)
-    -> (r -> Column PGBool)
-    -> (r -> returned)
-    -> Transaction (Maybe haskells)
-updateReturningFirst table r2w predicate r2returned =
-    listToMaybe <$> updateReturning table r2w predicate r2returned
+updateReturningFirst :: Default QueryRunner returned haskells
+                     => Table w r
+                     -> (r -> w)
+                     -> (r -> Column PGBool)
+                     -> (r -> returned)
+                     -> Transaction (Maybe haskells)
+updateReturningFirst table r2w predicate r2returned = listToMaybe <$> updateReturning table r2w predicate r2returned
 
-delete
-    :: Table a columnsR
-    -> (columnsR -> Column PGBool)
-    -> Transaction Int64
+
+delete :: Table a columnsR -> (columnsR -> Column PGBool) -> Transaction Int64
 delete table r2b = withConnIO (\c -> runDelete c table r2b)
