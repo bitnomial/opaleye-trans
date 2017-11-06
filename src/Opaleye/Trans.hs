@@ -1,9 +1,6 @@
 {-# LANGUAGE FlexibleContexts           #-}
-{-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
-{-# LANGUAGE TypeFamilies               #-}
-{-# LANGUAGE UndecidableInstances       #-}
 
 module Opaleye.Trans
     ( OpaleyeT (..)
@@ -37,15 +34,12 @@ module Opaleye.Trans
       withConn
 
     , -- * Reexports
-      liftBase
-    , MonadBase
-    , liftIO
+      liftIO
     , MonadIO
     , ask
     , Int64
     ) where
 
-import           Control.Monad.Base              (MonadBase, liftBase)
 import           Control.Monad.IO.Class          (MonadIO, liftIO)
 import           Control.Monad.Reader            (MonadReader, ReaderT (..),
                                                   ask)
@@ -65,10 +59,6 @@ import           Opaleye
 -- | The 'Opaleye' monad transformer
 newtype OpaleyeT m a = OpaleyeT { unOpaleyeT :: ReaderT Connection m a }
     deriving (Functor, Applicative, Monad, MonadTrans, MonadIO, MonadReader Connection)
-
-
-instance MonadBase b m => MonadBase b (OpaleyeT m) where
-    liftBase = lift . liftBase
 
 
 -- | Given a 'Connection', run an 'OpaleyeT'
@@ -140,30 +130,31 @@ insertManyReturning :: Default QueryRunner a b => Table w r -> [w] -> (r -> a) -
 insertManyReturning t ws ret = withConnIO (\c -> runInsertManyReturning c t ws ret)
 
 
--- | Update items in a 'Table' where the predicate is true.  See 'runUpdate'.
+-- | Update items in a 'Table' where the predicate is true. See 'runUpdate'.
 update :: Table w r -> (r -> w) -> (r -> Column PGBool) -> Transaction Int64
 update t r2w predicate = withConnIO (\c -> runUpdate c t r2w predicate)
 
 
--- | Update items in a 'Table' with a return value.  See 'runUpdateReturning'.
-updateReturning :: Default QueryRunner returned haskells
+-- | Update items in a 'Table' with a return value. See 'runUpdateReturning'.
+updateReturning :: Default QueryRunner a b
                 => Table w r
                 -> (r -> w)
                 -> (r -> Column PGBool)
-                -> (r -> returned)
-                -> Transaction [haskells]
+                -> (r -> a)
+                -> Transaction [b]
 updateReturning table r2w predicate r2returned = withConnIO (\c -> runUpdateReturning c table r2w predicate r2returned)
 
 
--- | Update items in a 'Table' with a return value.  Similar to @'listToMaybe' '<$>' 'updateReturning'@.
-updateReturningFirst :: Default QueryRunner returned haskells
+-- | Update items in a 'Table' with a return value. Similar to @'listToMaybe' '<$>' 'updateReturning'@.
+updateReturningFirst :: Default QueryRunner a b
                      => Table w r
                      -> (r -> w)
                      -> (r -> Column PGBool)
-                     -> (r -> returned)
-                     -> Transaction (Maybe haskells)
+                     -> (r -> a)
+                     -> Transaction (Maybe b)
 updateReturningFirst table r2w predicate r2returned = listToMaybe <$> updateReturning table r2w predicate r2returned
 
 
-delete :: Table a columnsR -> (columnsR -> Column PGBool) -> Transaction Int64
+-- | Delete items in a 'Table' that satisfy some boolean predicate. See 'runDelete'.
+delete :: Table a b -> (b -> Column PGBool) -> Transaction Int64
 delete table r2b = withConnIO (\c -> runDelete c table r2b)
