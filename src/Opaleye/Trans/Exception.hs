@@ -2,11 +2,8 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
 
--- | This module wraps 'Opaleye.Trans' and includes some basic exception handling. We handle 'SqlError' and domain
--- errors. By domain errors, we mean that the user of this library supplies an exception type for queries that could possibly fail.
 module Opaleye.Trans.Exception
     ( OpaleyeT (..)
-    , OpaleyeError (..)
     , runOpaleyeT
 
     , -- * Transactions
@@ -36,11 +33,10 @@ module Opaleye.Trans.Exception
     , -- * Exceptions
       withExceptOpaleye
     , withExceptTrans
-    , opaleyeError
-    , domainError
 
     , -- * Utilities
       withError
+    , withoutError
     , liftError
     , withTrans
     , maybeError
@@ -87,31 +83,9 @@ withOpaleye :: Monad m => T.OpaleyeT m a -> OpaleyeT e m a
 withOpaleye = OpaleyeT . lift
 
 
--- | 'OpaleyeError's are either 'PSQL.SqlError's or 'DomainError's
-data OpaleyeError e = SqlError PSQL.SqlError | DomainError e deriving (Show, Eq)
-
-
--- | Dispatcher helper the two kinds of exceptions that 'OpaleyeT' handles.
-opaleyeError :: (PSQL.SqlError -> a) -> (e -> a) -> OpaleyeError e -> a
-opaleyeError f _ (SqlError e)    = f e
-opaleyeError _ f (DomainError e) = f e
-
-
--- | Dispatcher helper for domain errors. 'PSQL.SqlError's are rethrown.
-domainError :: MonadIO m => (e -> m a) -> OpaleyeError e -> m a
-domainError _ (SqlError e)    = liftIO $ throw e
-domainError f (DomainError e) = f e
-
-
 -- | Given a 'Connection', run an 'OpaleyeT'
-runOpaleyeT :: PSQL.Connection -> OpaleyeT e IO a -> IO (Either (OpaleyeError e) a)
-runOpaleyeT c f =
-    (fmap mkOpaleyeError . T.runOpaleyeT c . runExceptT . unOpaleyeT $ f)
-  `catch`
-    (return . Left . SqlError)
-  where
-    mkOpaleyeError (Left e)  = Left (DomainError e)
-    mkOpaleyeError (Right a) = Right a
+runOpaleyeT :: PSQL.Connection -> OpaleyeT e m a -> m (Either e a)
+runOpaleyeT c = T.runOpaleyeT c . runExceptT . unOpaleyeT
 
 
 withExceptOpaleye :: Functor m => (e -> e') -> OpaleyeT e m a -> OpaleyeT e' m a
@@ -127,8 +101,12 @@ withExceptTrans :: (e -> e') -> Transaction e a -> Transaction e' a
 withExceptTrans f = Transaction . withExceptT f . unTransaction
 
 
-withError :: Monad m => T.OpaleyeT m (Either e b) -> OpaleyeT e m b
+withError :: Monad m => T.OpaleyeT m (Either e a) -> OpaleyeT e m a
 withError f = withOpaleye f >>= either throwError return
+
+
+withoutError :: Monad m => OpaleyeT e m a -> T.OpaleyeT m (Either e a)
+withoutError = runExceptT . unOpaleyeT
 
 
 liftError :: Monad m
