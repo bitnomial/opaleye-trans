@@ -1,5 +1,5 @@
 name:                opaleye-trans
-version:             0.4.1
+version:             0.4.2
 synopsis:            A monad transformer for Opaleye
 description:         A monad transformer for Opaleye
 homepage:            https://github.com/WraithM/opaleye-trans
