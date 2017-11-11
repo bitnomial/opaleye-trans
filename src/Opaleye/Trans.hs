@@ -44,6 +44,7 @@ import           Control.Monad.IO.Class          (MonadIO, liftIO)
 import           Control.Monad.Reader            (MonadReader, ReaderT (..),
                                                   ask)
 import           Control.Monad.Trans             (MonadTrans (..))
+import           Control.Monad.Catch             (MonadCatch, MonadThrow)
 
 import           Data.Maybe                      (listToMaybe)
 import           Data.Profunctor.Product.Default (Default)
@@ -58,7 +59,9 @@ import           Opaleye
 
 -- | The 'Opaleye' monad transformer
 newtype OpaleyeT m a = OpaleyeT { unOpaleyeT :: ReaderT Connection m a }
-    deriving (Functor, Applicative, Monad, MonadTrans, MonadIO, MonadReader Connection)
+    deriving ( Functor, Applicative, Monad, MonadTrans, MonadIO
+             , MonadReader Connection, MonadCatch, MonadThrow
+             )
 
 
 -- | Given a 'Connection', run an 'OpaleyeT'

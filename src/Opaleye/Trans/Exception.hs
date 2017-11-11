@@ -58,6 +58,7 @@ import           Control.Monad.Except            (ExceptT (..), MonadError,
 import           Control.Monad.IO.Class          (MonadIO, liftIO)
 import           Control.Monad.Reader            (MonadReader (..))
 import           Control.Monad.Trans             (MonadTrans (..))
+import           Control.Monad.Catch             (MonadCatch, MonadThrow)
 
 import           Data.Profunctor.Product.Default (Default)
 
@@ -72,7 +73,9 @@ import qualified Opaleye.Trans                   as T
 
 
 newtype OpaleyeT e m a = OpaleyeT { unOpaleyeT :: ExceptT e (T.OpaleyeT m) a }
-    deriving (Functor, Applicative, Monad, MonadIO, MonadReader Connection, MonadError e)
+    deriving ( Functor, Applicative, Monad, MonadIO, MonadReader Connection
+             , MonadError e, MonadCatch, MonadThrow
+             )
 
 
 instance MonadTrans (OpaleyeT e) where
