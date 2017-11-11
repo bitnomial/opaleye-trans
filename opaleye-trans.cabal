@@ -33,6 +33,7 @@ library
                , postgresql-simple   >= 0.4 && < 0.6
                , product-profunctors >= 0.6 && < 0.9
                , transformers        >= 0.3 && < 0.6
+               , exceptions          >= 0.6 && < 0.9
 
 
 executable opaleye-rosetree
