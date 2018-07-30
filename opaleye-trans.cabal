@@ -31,7 +31,7 @@ library
                , mtl                 >= 2.2 && < 2.3
                , opaleye             >= 0.4 && < 0.7
                , postgresql-simple   >= 0.4 && < 0.6
-               , product-profunctors >= 0.6 && < 0.9
+               , product-profunctors >= 0.6 && < 0.10
                , transformers        >= 0.3 && < 0.6
                , exceptions          >= 0.6 && < 0.9
 
@@ -45,7 +45,7 @@ executable opaleye-rosetree
                , opaleye             >= 0.4 && < 0.7
                , opaleye-trans
                , postgresql-simple   >= 0.4 && < 0.6
-               , product-profunctors >= 0.6 && < 0.9
+               , product-profunctors >= 0.6 && < 0.10
 
 
 executable opaleye-rosetree2
@@ -56,4 +56,4 @@ executable opaleye-rosetree2
                , opaleye             >= 0.4 && < 0.7
                , opaleye-trans
                , postgresql-simple   >= 0.4 && < 0.6
-               , product-profunctors >= 0.6 && < 0.9
+               , product-profunctors >= 0.6 && < 0.10
