@@ -1,5 +1,6 @@
-resolver: lts-11.19
+resolver: lts-12.5
 packages:
 - '.'
-extra-deps: []
 flags: {}
+extra-deps:
+  - opaleye-0.6.7001.0
