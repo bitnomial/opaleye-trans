@@ -8,12 +8,11 @@
 module Main where
 
 import           Control.Arrow
-
+import           Data.Maybe                 (fromJust)
 import           Data.Profunctor.Product.TH (makeAdaptorAndInstance)
-
 import qualified Database.PostgreSQL.Simple as PSQL
-
 import           Opaleye
+
 import           Opaleye.Trans
 
 
@@ -37,7 +36,7 @@ type WriteNode a = NodeP (Maybe (Column PGInt4)) (Column PGInt4) (Column PGInt4)
 type ReadNode a = NodeP (Column PGInt4) (Column PGInt4) (Column PGInt4) (Column a)
 
 
-data BranchP i = BranchP
+newtype BranchP i = BranchP
     { branchId :: i
     } deriving (Show, Eq)
 
@@ -97,9 +96,9 @@ insertNode bid nbid x =
 
 insertTree :: MonadIO m => Rose Int -> OpaleyeT m Int
 insertTree (Node x xs) = transaction $ do
-    Just bid <- newBranch
-    Just rootId <- insertNode 0 bid x
-    Just treeId <- newTree rootId
+    bid <- fromJust <$> newBranch
+    rootId <- fromJust <$> insertNode 0 bid x
+    treeId <- fromJust <$> newTree rootId
 
     mapM_ (insertTree' bid) xs
 
@@ -108,15 +107,15 @@ insertTree (Node x xs) = transaction $ do
 
 insertTree' :: Int -> Rose Int -> Transaction ()
 insertTree' bid (Node x xs) = do
-    Just nbid <- newBranch
+    nbid <- fromJust <$> newBranch
     insertNode bid nbid x
     mapM_ (insertTree' nbid) xs
 
 
 selectTree :: Int -> Transaction (Rose Int)
 selectTree treeId = do
-    Just rootId <- selectRootNode treeId
-    Just (NodeP _ _ nbid x) <- selectNode rootId
+    rootId <- fromJust <$> selectRootNode treeId
+    (NodeP _ _ nbid x) <- fromJust <$> selectNode rootId
     xs <- selectBranch nbid
     return (Node x xs)
 

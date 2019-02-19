@@ -9,12 +9,11 @@ module Main where
 
 import           Control.Arrow
 import           Control.Monad              (void)
-
+import           Data.Maybe                 (fromJust)
 import           Data.Profunctor.Product.TH (makeAdaptorAndInstance)
-
 import qualified Database.PostgreSQL.Simple as PSQL
-
 import           Opaleye
+
 import           Opaleye.Trans
 
 
@@ -26,7 +25,7 @@ data Rose a
 
 instance Functor Rose where
     fmap f (Node x rs) = Node (f x) (map (fmap f) rs)
-    fmap f (Leaf x) = Leaf (f x)
+    fmap f (Leaf x)    = Leaf (f x)
 
 
 data NodeP i b a = NodeP
@@ -48,7 +47,7 @@ type NodeBranch = NodeBranchP (Column PGInt4) (Column PGInt4)
 type NullableNodeBranch = NodeBranchP (Column (Nullable PGInt4)) (Column (Nullable PGInt4))
 
 
-data BranchP i = BranchP
+newtype BranchP i = BranchP
     { branchId :: i
     } deriving (Show, Eq)
 
@@ -110,7 +109,7 @@ newBranch = insertReturningFirst branchTable branchId (BranchP Nothing)
 
 insertNode :: Int -> Maybe Int -> Int -> Transaction (Maybe Int)
 insertNode bid (Just nbid) x = do
-    Just nodeId <- insertReturningFirst nodeTable nodeId
+    nodeId <- fromJust <$> insertReturningFirst nodeTable nodeId
         (NodeP Nothing (pgInt4 bid) (pgInt4 x))
     insert nodeBranchTable (NodeBranchP (pgInt4 nodeId) (pgInt4 nbid))
     return (Just nodeId)
@@ -121,22 +120,21 @@ insertNode bid Nothing x =
 
 insertTree :: MonadIO m => Rose Int -> OpaleyeT m Int
 insertTree (Node x xs) = transaction $ do
-    Just bid <- newBranch
-    Just rootId <- insertNode 0 (Just bid) x
-    Just treeId <- newTree rootId
+    bid <- fromJust <$> newBranch
+    rootId <- fromJust <$> insertNode 0 (Just bid) x
+    treeId <- fromJust <$> newTree rootId
 
     mapM_ (insertTree' bid) xs
 
     return treeId
 insertTree (Leaf x) = transaction $ do
-    Just rootId <- insertNode 0 Nothing x
-    Just treeId <- newTree rootId
-    return treeId
+    rootId <- fromJust <$> insertNode 0 Nothing x
+    fromJust <$> newTree rootId
 
 
 insertTree' :: Int -> Rose Int -> Transaction ()
 insertTree' bid (Node x xs) = do
-    Just nbid <- newBranch
+    nbid <- fromJust <$> newBranch
     insertNode bid (Just nbid) x
     mapM_ (insertTree' nbid) xs
 insertTree' bid (Leaf x) =
@@ -146,8 +144,8 @@ insertTree' bid (Leaf x) =
 -- TODO Wrong order
 selectTree :: Int -> Transaction (Rose Int)
 selectTree treeId = do
-    Just rootId <- selectRootNode treeId
-    Just (NodeP _ _ x, NodeBranchP _ mbid) <- selectNode rootId
+    rootId <- fromJust <$> selectRootNode treeId
+    (NodeP _ _ x, NodeBranchP _ mbid) <- fromJust <$> selectNode rootId
     case mbid of
         Just nbid -> do
             xs <- selectBranch nbid
@@ -196,10 +194,9 @@ selectBranch bid = do
   where
     nodeByBranchId :: Query (ReadNode PGInt4, NullableNodeBranch)
     nodeByBranchId = byId nodeAndBranch (nodeBranchId . fst) bid
-    
-    mkNode 
-        :: (NodeP Int Int Int, NodeBranchP (Maybe Int) (Maybe Int)) 
-        -> Transaction (Rose Int)
+
+    mkNode :: (NodeP Int Int Int, NodeBranchP (Maybe Int) (Maybe Int))
+           -> Transaction (Rose Int)
     mkNode (NodeP _ _ x, NodeBranchP Nothing Nothing) = return (Leaf x)
     mkNode (NodeP _ _ x, NodeBranchP _ (Just nbid)) = do
         xs <- selectBranch nbid
