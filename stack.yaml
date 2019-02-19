@@ -3,4 +3,4 @@ packages:
 - '.'
 flags: {}
 extra-deps:
-  - opaleye-0.6.7001.0
+  - opaleye-0.6.7003.1
