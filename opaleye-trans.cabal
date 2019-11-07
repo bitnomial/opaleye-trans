@@ -1,5 +1,5 @@
 name:                opaleye-trans
-version:             0.5.0
+version:             0.5.1
 synopsis:            A monad transformer for Opaleye
 description:         A monad transformer for Opaleye with exceptions
 homepage:            https://github.com/bitnomial/opaleye-trans
